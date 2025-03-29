@@ -1,98 +1,106 @@
-# Logstash Plugin
+# DebugPrint Logstash Filter Plugin
 
-[![Travis Build Status](https://travis-ci.com/logstash-plugins/logstash-filter-example.svg)](https://travis-ci.com/logstash-plugins/logstash-filter-example)
+The `debug_print` is a custom Logstash filter plugin designed to print event data to the standard output in JSON format. It is useful for debugging and inspecting event data during Logstash pipeline development.
 
-This is a plugin for [Logstash](https://github.com/elastic/logstash).
+## Features
 
-It is fully free and fully open source. The license is Apache 2.0, meaning you are pretty much free to use it however you want in whatever way.
+- Outputs event data in JSON format.
+- Supports optional tagging of output.
+- Allows pretty-printing of JSON for better readability.
 
-## Documentation
+## Configuration Options
 
-Logstash provides infrastructure to automatically build documentation for this plugin. We provide a template file, index.asciidoc, where you can add documentation. The contents of this file will be converted into html and then placed with other plugin documentation in a [central location](http://www.elastic.co/guide/en/logstash/current/).
+| Option   | Type    | Default | Description                                                                 |
+|----------|---------|---------|-----------------------------------------------------------------------------|
+| `tag`    | String  | `nil`   | Adds a custom tag to the output JSON.                                       |
+| `pretty` | Boolean | `false` | Enables pretty-printing of the JSON output for better readability.          |
 
-- For formatting config examples, you can use the asciidoc `[source,json]` directive
-- For more asciidoc formatting tips, see the excellent reference here https://github.com/elastic/docs#asciidoc-guide
+## Example Configuration
 
-## Need Help?
+Below is an example of how to use the `debug_print` filter in a Logstash pipeline configuration:
 
-Need help? Try #logstash on freenode IRC or the https://discuss.elastic.co/c/logstash discussion forum.
+- config file
+```conf
+# example.conf
+input {
+  stdin {}
+}
 
-## Developing
+filter {
+  mutate {
+    add_field => { "foo" => "bar" }
+  }
+  debug_print {
+    tag => "debug_output"
+    pretty => true
+  }
+  mutate {
+    add_field => { "baz" => "quux" }
+  }
+}
 
-### 1. Plugin Developement and Testing
-
-#### Code
-- To get started, you'll need JRuby with the Bundler gem installed.
-
-- Create a new plugin or clone and existing from the GitHub [logstash-plugins](https://github.com/logstash-plugins) organization. We also provide [example plugins](https://github.com/logstash-plugins?query=example).
-
-- Install dependencies
-```sh
-bundle install
+output {
+  stdout { codec => rubydebug }
+}
 ```
 
-#### Test
-
-- Update your dependencies
-
-```sh
-bundle install
+- command
+```bash
+$ cd /tmp && git clone https://github.com/necoskijanen/logstash-filter-debug_print.git
+$ echo "hello world" | sudo /usr/share/logstash/bin/logstash  -f /workspace/example.conf --path.plugins /tmp/logstash-filter-debug_print/lib
 ```
 
-- Run tests
-
-```sh
-bundle exec rspec
+- output
+```conf
+# stdout
+{
+  "tag": "debug_output",
+  "data": {
+    "event": {
+      "original": "hello world"
+    },
+    "@version": "1",
+    "@timestamp": "2025-03-29T09:31:04.587228185Z",
+    "message": "hello world",
+    "host": {
+      "hostname": "3b064c4f9911"
+    },
+    "foo": "bar"
+  }
+}
+{
+         "event" => {
+        "original" => "hello world"
+    },
+      "@version" => "1",
+    "@timestamp" => 2025-03-29T09:31:04.587228185Z,
+       "message" => "hello world",
+           "baz" => "quux",
+          "host" => {
+        "hostname" => "3b064c4f9911"
+    },
+           "foo" => "bar"
+}
 ```
 
-### 2. Running your unpublished Plugin in Logstash
+## Installation
 
-#### 2.1 Run in a local Logstash clone
+### Option 1: Install as a Plugin
 
-- Edit Logstash `Gemfile` and add the local plugin path, for example:
-```ruby
-gem "logstash-filter-awesome", :path => "/your/local/logstash-filter-awesome"
+```bash
+git clone https://github.com/necoskijanen/logstash-filter-debug_print.git
+bin/logstash-plugin install --no-verify logstash-filter-debug_print/logstash-filter-debug_print-0.1.0.gem
 ```
-- Install plugin
-```sh
-# Logstash 2.3 and higher
-bin/logstash-plugin install --no-verify
 
-# Prior to Logstash 2.3
-bin/plugin install --no-verify
+### Option 2: Use Without Installation
 
+You can use the plugin without installing it by specifying the file via the `--path.plugins` command-line argument:
+
+```bash
+git clone https://github.com/necoskijanen/logstash-filter-debug_print.git
+logstash -f /path/to/pipeline.conf --path.plugins logstash-filter-debug_print/lib 
 ```
-- Run Logstash with your plugin
-```sh
-bin/logstash -e 'filter {awesome {}}'
-```
-At this point any modifications to the plugin code will be applied to this local Logstash setup. After modifying the plugin, simply rerun Logstash.
 
-#### 2.2 Run in an installed Logstash
+## License
 
-You can use the same **2.1** method to run your plugin in an installed Logstash by editing its `Gemfile` and pointing the `:path` to your local plugin development directory or you can build the gem and install it using:
-
-- Build your plugin gem
-```sh
-gem build logstash-filter-awesome.gemspec
-```
-- Install the plugin from the Logstash home
-```sh
-# Logstash 2.3 and higher
-bin/logstash-plugin install --no-verify
-
-# Prior to Logstash 2.3
-bin/plugin install --no-verify
-
-```
-- Start Logstash and proceed to test the plugin
-
-## Contributing
-
-All contributions are welcome: ideas, patches, documentation, bug reports, complaints, and even something you drew up on a napkin.
-
-Programming is not a required skill. Whatever you've seen about open source and maintainers or community members  saying "send patches or die" - you will not see that here.
-
-It is more important to the community that you are able to contribute.
-
-For more information about contributing, see the [CONTRIBUTING](https://github.com/elastic/logstash/blob/master/CONTRIBUTING.md) file.
+This plugin is provided under the [Apache License 2.0](LICENSE).
